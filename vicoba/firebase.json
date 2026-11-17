@@ -1,0 +1,31 @@
+{
+    "flutter": {
+        "platforms": {
+            "android": {
+                "default": {
+                    "projectId": "fir-tutorial-aa758",
+                    "appId": "1:259095175058:android:5ef501219754a67aa66b4b",
+                    "fileOutput": "android/app/google-services.json"
+                }
+            },
+            "dart": {
+                "lib/firebase_options.dart": {
+                    "projectId": "fir-tutorial-aa758",
+                    "configurations": {
+                        "android": "1:259095175058:android:5ef501219754a67aa66b4b",
+                        "ios": "1:259095175058:ios:9403e492f24bd79aa66b4b",
+                        "macos": "1:259095175058:ios:9403e492f24bd79aa66b4b",
+                        "web": "1:259095175058:web:74088999935485d4a66b4b",
+                        "windows": "1:259095175058:web:c99717fcc59cc2bda66b4b"
+                    }
+                }
+            }
+        }
+    },
+    "firestore": {
+        "indexes": "firestore.indexes.json"
+    },
+    "storage": {
+        "rules": "storage.rules"
+    }
+}

@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "259095175058",
+    "project_id": "fir-tutorial-aa758",
+    "storage_bucket": "fir-tutorial-aa758.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:259095175058:android:c4a99040d68f846ca66b4b",
+        "android_client_info": {
+          "package_name": "com.example.project"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD0G6duQBp-7xSwUGbSARaOVka4arwitdw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:259095175058:android:5ef501219754a67aa66b4b",
+        "android_client_info": {
+          "package_name": "com.example.vicoba"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD0G6duQBp-7xSwUGbSARaOVka4arwitdw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
