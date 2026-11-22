@@ -4,6 +4,9 @@ import 'package:get/get.dart';
 import '../bloc/contribution/contribution_bloc.dart';
 import '../bloc/contribution/contribution_event.dart';
 import '../bloc/contribution/contribution_state.dart';
+import '../bloc/group/group_bloc.dart';
+import '../bloc/group/group_state.dart';
+import '../../domain/entities/group_entity.dart';
 import '../../domain/entities/contribution_entity.dart';
 
 class ContributionsScreen extends StatefulWidget {
@@ -15,8 +18,9 @@ class ContributionsScreen extends StatefulWidget {
 
 class _ContributionsScreenState extends State<ContributionsScreen> {
   final ContributionBloc _contributionBloc = Get.find<ContributionBloc>();
+  final GroupBloc _groupBloc = Get.find<GroupBloc>();
   final TextEditingController _amountController = TextEditingController();
-  final TextEditingController _groupIdController = TextEditingController();
+  GroupEntity? _selectedGroup;
   String? _selectedPaymentMethod;
   double _lastContributionAmount = 0.0;
 
@@ -25,7 +29,6 @@ class _ContributionsScreenState extends State<ContributionsScreen> {
   @override
   void dispose() {
     _amountController.dispose();
-    _groupIdController.dispose();
     super.dispose();
   }
 
@@ -46,7 +49,8 @@ class _ContributionsScreenState extends State<ContributionsScreen> {
 
   void _showContributionBottomSheet() {
     _amountController.clear();
-    _groupIdController.clear();
+    final groups = _groupBloc.state.groups;
+    _selectedGroup = groups.isNotEmpty ? groups.first : null;
     _selectedPaymentMethod = ContributionBloc.paymentMethods.isNotEmpty
         ? ContributionBloc.paymentMethods.first
         : 'M-Pesa';
@@ -101,9 +105,9 @@ class _ContributionsScreenState extends State<ContributionsScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Group ID Field
+                  // Group Selection Field
                   const Text(
-                    "Group Identification",
+                    "Select Group",
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
@@ -111,28 +115,87 @@ class _ContributionsScreenState extends State<ContributionsScreen> {
                     ),
                   ),
                   const SizedBox(height: 6),
-                  TextField(
-                    controller: _groupIdController,
-                    decoration: InputDecoration(
-                      hintText: "Enter or select Group ID",
-                      hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
-                      prefixIcon: const Icon(Icons.groups_rounded, color: Color(0xFF2563EB), size: 20),
-                      filled: true,
-                      fillColor: const Color(0xFFF8FAFC),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xFF2563EB), width: 1.6),
-                      ),
-                    ),
+                  BlocBuilder<GroupBloc, GroupState>(
+                    bloc: _groupBloc,
+                    builder: (context, groupState) {
+                      if (groupState.groups.isEmpty) {
+                        return Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 14,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF8FAFC),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: const Color(0xFFE2E8F0)),
+                          ),
+                          child: const Text(
+                            "You are not a member of any group yet. Join or create a group first.",
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Color(0xFF64748B),
+                            ),
+                          ),
+                        );
+                      }
+                      return DropdownButtonFormField<GroupEntity>(
+                        initialValue: _selectedGroup,
+                        isExpanded: true,
+                        decoration: InputDecoration(
+                          hintText: "Select your group",
+                          hintStyle: TextStyle(
+                            color: Colors.grey[400],
+                            fontSize: 14,
+                          ),
+                          prefixIcon: const Icon(
+                            Icons.groups_rounded,
+                            color: Color(0xFF2563EB),
+                            size: 20,
+                          ),
+                          filled: true,
+                          fillColor: const Color(0xFFF8FAFC),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 12,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(
+                              color: Color(0xFFE2E8F0),
+                            ),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(
+                              color: Color(0xFFE2E8F0),
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(
+                              color: Color(0xFF2563EB),
+                              width: 1.6,
+                            ),
+                          ),
+                        ),
+                        items: groupState.groups.map((group) {
+                          return DropdownMenuItem<GroupEntity>(
+                            value: group,
+                            child: Text(
+                              group.name,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(fontSize: 14),
+                            ),
+                          );
+                        }).toList(),
+                        onChanged: (group) {
+                          setState(() {
+                            _selectedGroup = group;
+                          });
+                        },
+                      );
+                    },
                   ),
                   const SizedBox(height: 16),
 
@@ -283,7 +346,7 @@ class _ContributionsScreenState extends State<ContributionsScreen> {
                           onPressed: state.isLoading
                               ? null
                               : () {
-                                  if (_groupIdController.text.trim().isEmpty ||
+                                  if (_selectedGroup == null ||
                                       _amountController.text.trim().isEmpty ||
                                       _selectedPaymentMethod == null) {
                                     Get.snackbar(
@@ -315,7 +378,7 @@ class _ContributionsScreenState extends State<ContributionsScreen> {
                                   _lastContributionAmount = amount;
                                   _contributionBloc.add(
                                     MakeContributionRequested(
-                                      groupId: _groupIdController.text.trim(),
+                                      groupId: _selectedGroup!.id,
                                       amount: amount,
                                       paymentMethod: _selectedPaymentMethod!,
                                     ),

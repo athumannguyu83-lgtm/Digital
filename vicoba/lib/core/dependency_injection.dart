@@ -2,12 +2,15 @@ import 'package:get/get.dart';
 import '../data/datasources/firebase_auth_datasource.dart';
 import '../data/datasources/firebase_loan_datasource.dart';
 import '../data/datasources/firebase_contribution_datasource.dart';
+import '../data/datasources/firebase_group_datasource.dart';
 import '../data/repositories/auth_repository_impl.dart';
 import '../data/repositories/loan_repository_impl.dart';
 import '../data/repositories/contribution_repository_impl.dart';
+import '../data/repositories/group_repository_impl.dart';
 import '../domain/repositories/auth_repository.dart';
 import '../domain/repositories/loan_repository.dart';
 import '../domain/repositories/contribution_repository.dart';
+import '../domain/repositories/group_repository.dart';
 import '../domain/usecases/register_user_usecase.dart';
 import '../domain/usecases/login_user_usecase.dart';
 import '../domain/usecases/get_user_role_usecase.dart';
@@ -28,9 +31,13 @@ import '../domain/usecases/make_contribution_usecase.dart';
 import '../domain/usecases/get_user_contributions_usecase.dart';
 import '../domain/usecases/get_contributions_by_filter_usecase.dart';
 import '../domain/usecases/get_total_contributions_usecase.dart';
+import '../domain/usecases/get_user_groups_usecase.dart';
+import '../domain/usecases/join_group_by_code_usecase.dart';
+import '../domain/usecases/create_group_usecase.dart';
 import '../presentation/bloc/auth/auth_bloc.dart';
 import '../presentation/bloc/loan/loan_bloc.dart';
 import '../presentation/bloc/contribution/contribution_bloc.dart';
+import '../presentation/bloc/group/group_bloc.dart';
 
 class DependencyInjection {
   static void init() {
@@ -38,6 +45,7 @@ class DependencyInjection {
     Get.lazyPut(() => FirebaseAuthDataSource());
     Get.lazyPut(() => FirebaseLoanDataSource());
     Get.lazyPut(() => FirebaseContributionDataSource());
+    Get.lazyPut(() => FirebaseGroupDataSource());
 
     // Repositories
     Get.lazyPut<AuthRepository>(
@@ -50,6 +58,9 @@ class DependencyInjection {
       () => ContributionRepositoryImpl(
         Get.find<FirebaseContributionDataSource>(),
       ),
+    );
+    Get.lazyPut<GroupRepository>(
+      () => GroupRepositoryImpl(Get.find<FirebaseGroupDataSource>()),
     );
 
     // Use Cases - Auth
@@ -86,6 +97,11 @@ class DependencyInjection {
       () => GetTotalContributionsUseCase(Get.find<ContributionRepository>()),
     );
 
+    // Use Cases - Group
+    Get.lazyPut(() => GetUserGroupsUseCase(Get.find<GroupRepository>()));
+    Get.lazyPut(() => JoinGroupByCodeUseCase(Get.find<GroupRepository>()));
+    Get.lazyPut(() => CreateGroupUseCase(Get.find<GroupRepository>()));
+
     // BLoCs
     Get.lazyPut(
       () => AuthBloc(
@@ -117,6 +133,13 @@ class DependencyInjection {
         Get.find<GetUserContributionsUseCase>(),
         Get.find<GetContributionsByFilterUseCase>(),
         Get.find<GetTotalContributionsUseCase>(),
+      ),
+    );
+    Get.lazyPut(
+      () => GroupBloc(
+        Get.find<GetUserGroupsUseCase>(),
+        Get.find<CreateGroupUseCase>(),
+        Get.find<JoinGroupByCodeUseCase>(),
       ),
     );
   }

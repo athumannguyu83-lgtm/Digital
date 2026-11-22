@@ -7,6 +7,25 @@ class FirebaseContributionDataSource {
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   Future<void> addContribution(Map<String, dynamic> contributionData) async {
+    final userId = _auth.currentUser?.uid;
+    final groupId = contributionData['groupId']?.toString();
+
+    if (userId == null) {
+      throw Exception("User not logged in");
+    }
+    if (groupId == null || groupId.isEmpty) {
+      throw Exception("Group ID is required");
+    }
+
+    final groupDoc = await _firestore.collection("groups").doc(groupId).get();
+    if (!groupDoc.exists) {
+      throw Exception("Group not found");
+    }
+    final members = groupDoc.data()?['members'];
+    if (members is! List || !members.contains(userId)) {
+      throw Exception("You are not a member of this group");
+    }
+
     await _firestore.collection("contributions").add(contributionData);
   }
 

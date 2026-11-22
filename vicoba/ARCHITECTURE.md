@@ -11,11 +11,14 @@ This document describes the clean architecture implementation for the Vicoba Flu
 #### Entities (`lib/domain/entities/`)
 - `user_entity.dart`: Core user business object
 - `loan_entity.dart`: Core loan business object
+- `group_entity.dart`: Core group business object (members, group code, contribution settings)
 - These are pure Dart classes with no dependencies on frameworks or external libraries
 
 #### Repositories (`lib/domain/repositories/`)
 - `auth_repository.dart`: Abstract interface for authentication operations
 - `loan_repository.dart`: Abstract interface for loan operations
+- `group_repository.dart`: Abstract interface for group operations
+- `contribution_repository.dart`: Abstract interface for contribution operations
 - Define contracts that the data layer must implement
 
 #### Use Cases (`lib/domain/usecases/`)
@@ -58,6 +61,7 @@ This document describes the clean architecture implementation for the Vicoba Flu
 - `auth/`: `AuthBloc` with `auth_event.dart` / `auth_state.dart` — manages authentication and profile state
 - `loan/`: `LoanBloc` with `loan_event.dart` / `loan_state.dart` — manages loan requests and approvals
 - `contribution/`: `ContributionBloc` with `contribution_event.dart` / `contribution_state.dart` — manages contributions, totals, and filters
+- `group/`: `GroupBloc` with `group_event.dart` / `group_state.dart` — manages the user's groups, group creation, and join-by-code
 - Built with `flutter_bloc`; each feature folder contains the bloc, events, and states
 - Communicate with use cases from the domain layer
 - Pages dispatch events (`bloc.add(...)`) and react via `BlocBuilder`/`BlocListener`
