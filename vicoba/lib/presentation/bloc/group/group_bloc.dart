@@ -4,7 +4,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../domain/entities/group_entity.dart';
 import '../../../domain/usecases/create_group_usecase.dart';
 import '../../../domain/usecases/get_user_groups_usecase.dart';
+import '../../../domain/usecases/get_group_members_usecase.dart';
 import '../../../domain/usecases/join_group_by_code_usecase.dart';
+import '../../../domain/usecases/join_group_usecase.dart';
 import 'group_event.dart';
 import 'group_state.dart';
 
@@ -12,15 +14,21 @@ class GroupBloc extends Bloc<GroupEvent, GroupState> {
   final GetUserGroupsUseCase _getUserGroupsUseCase;
   final CreateGroupUseCase _createGroupUseCase;
   final JoinGroupByCodeUseCase _joinGroupByCodeUseCase;
+  final JoinGroupUseCase _joinGroupUseCase;
+  final GetGroupMembersUseCase _getGroupMembersUseCase;
 
   GroupBloc(
     this._getUserGroupsUseCase,
     this._createGroupUseCase,
     this._joinGroupByCodeUseCase,
+    this._joinGroupUseCase,
+    this._getGroupMembersUseCase,
   ) : super(const GroupState()) {
     on<LoadUserGroupsRequested>(_onLoadUserGroupsRequested);
     on<CreateGroupRequested>(_onCreateGroupRequested);
     on<JoinGroupByCodeRequested>(_onJoinGroupByCodeRequested);
+    on<JoinGroupRequested>(_onJoinGroupRequested);
+    on<LoadGroupMembersRequested>(_onLoadGroupMembersRequested);
     on<ClearGroupError>(_onClearGroupError);
 
     add(const LoadUserGroupsRequested());
@@ -126,6 +134,71 @@ class GroupBloc extends Bloc<GroupEvent, GroupState> {
           status: GroupStatus.failure,
           operation: GroupOperation.join,
           errorMessage: e.toString(),
+        ),
+      );
+    }
+  }
+
+  Future<void> _onJoinGroupRequested(
+    JoinGroupRequested event,
+    Emitter<GroupState> emit,
+  ) async {
+    emit(
+      state.copyWith(
+        status: GroupStatus.loading,
+        operation: GroupOperation.join,
+        errorMessage: '',
+      ),
+    );
+    try {
+      await _joinGroupUseCase.execute(event.groupId);
+      emit(
+        state.copyWith(
+          status: GroupStatus.success,
+          operation: GroupOperation.join,
+          errorMessage: '',
+        ),
+      );
+    } catch (e) {
+      emit(
+        state.copyWith(
+          status: GroupStatus.failure,
+          operation: GroupOperation.join,
+          errorMessage: e.toString(),
+        ),
+      );
+    }
+  }
+
+  Future<void> _onLoadGroupMembersRequested(
+    LoadGroupMembersRequested event,
+    Emitter<GroupState> emit,
+  ) async {
+    emit(
+      state.copyWith(
+        status: GroupStatus.loading,
+        operation: GroupOperation.loadMembers,
+        membersGroupId: event.groupId,
+        clearMembers: true,
+      ),
+    );
+    try {
+      final members = await _getGroupMembersUseCase.execute(event.groupId);
+      emit(
+        state.copyWith(
+          status: GroupStatus.success,
+          operation: GroupOperation.loadMembers,
+          members: members,
+          membersGroupId: event.groupId,
+        ),
+      );
+    } catch (e) {
+      emit(
+        state.copyWith(
+          status: GroupStatus.failure,
+          operation: GroupOperation.loadMembers,
+          errorMessage: e.toString(),
+          membersGroupId: event.groupId,
         ),
       );
     }

@@ -35,6 +35,24 @@ class JoinGroupByCodeRequested extends GroupEvent {
   List<Object?> get props => [code];
 }
 
+class JoinGroupRequested extends GroupEvent {
+  final String groupId;
+
+  const JoinGroupRequested(this.groupId);
+
+  @override
+  List<Object?> get props => [groupId];
+}
+
+class LoadGroupMembersRequested extends GroupEvent {
+  final String groupId;
+
+  const LoadGroupMembersRequested(this.groupId);
+
+  @override
+  List<Object?> get props => [groupId];
+}
+
 class ClearGroupError extends GroupEvent {
   const ClearGroupError();
 }

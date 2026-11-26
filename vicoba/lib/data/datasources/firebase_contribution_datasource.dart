@@ -95,6 +95,14 @@ class FirebaseContributionDataSource {
             .toList());
   }
 
+  double _parseAmount(dynamic value) {
+    if (value is num) return value.toDouble();
+    if (value is String) {
+      return double.tryParse(value.replaceAll(',', '').trim()) ?? 0.0;
+    }
+    return 0.0;
+  }
+
   Future<double> getTotalContributions() async {
     final userId = _auth.currentUser?.uid;
     if (userId == null) {
@@ -109,7 +117,7 @@ class FirebaseContributionDataSource {
 
     double total = 0;
     for (var doc in snapshot.docs) {
-      total += (doc.data()["amount"] as num).toDouble();
+      total += _parseAmount(doc.data()["amount"]);
     }
 
     return total;
@@ -124,7 +132,7 @@ class FirebaseContributionDataSource {
 
     double total = 0;
     for (var doc in snapshot.docs) {
-      total += (doc.data()["amount"] as num).toDouble();
+      total += _parseAmount(doc.data()["amount"]);
     }
 
     return total;

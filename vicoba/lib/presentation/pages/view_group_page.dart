@@ -1,6 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get/get.dart';
+import '../bloc/group/group_bloc.dart';
+import '../bloc/group/group_event.dart';
+import '../bloc/group/group_state.dart';
+import '../../data/models/group_model.dart';
+import 'contribution_page.dart';
 import 'join_group_page.dart';
 import 'vicoba_group_page.dart';
 
@@ -710,12 +717,16 @@ class _ViewGroupPageState extends State<ViewGroupPage> {
       borderRadius: BorderRadius.circular(20),
       child: InkWell(
         onTap: () => _showGroupDetailsSheet(
+          docId: docId,
           name: name,
           amount: amount,
           frequency: frequency,
           region: region,
           createdDate: createdDate,
           groupCode: groupCode,
+          members: data['members'] is List
+              ? (data['members'] as List).map((e) => e.toString()).toList()
+              : const [],
         ),
         borderRadius: BorderRadius.circular(20),
         child: Container(
@@ -1015,13 +1026,18 @@ class _ViewGroupPageState extends State<ViewGroupPage> {
   }
 
   void _showGroupDetailsSheet({
+    required String docId,
     required String name,
     required double amount,
     required String frequency,
     required String region,
     required String createdDate,
     required String groupCode,
+    required List<String> members,
   }) {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    final isMember = uid != null && members.contains(uid);
+    final groupBloc = Get.find<GroupBloc>();
     Get.bottomSheet(
       Container(
         padding: const EdgeInsets.fromLTRB(22, 14, 22, 28),
@@ -1114,7 +1130,84 @@ class _ViewGroupPageState extends State<ViewGroupPage> {
                   ],
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 12),
+              // Members section
+              BlocBuilder<GroupBloc, GroupState>(
+                bloc: groupBloc,
+                builder: (context, groupState) {
+                  if (groupState.membersGroupId != docId ||
+                      groupState.members.isEmpty) {
+                    return const SizedBox.shrink();
+                  }
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 8),
+                      Text(
+                        "Members (${groupState.members.length})",
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF0F172A),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      ...groupState.members.map(
+                        (m) => Padding(
+                          padding: const EdgeInsets.only(bottom: 6),
+                          child: Row(
+                            children: [
+                              CircleAvatar(
+                                radius: 14,
+                                backgroundColor: const Color(0xFFEFF6FF),
+                                child: Text(
+                                  m.name.isNotEmpty ? m.name[0].toUpperCase() : 'M',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF2563EB),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  m.name,
+                                  style: const TextStyle(
+                                    fontSize: 13.5,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF0F172A),
+                                  ),
+                                ),
+                              ),
+                              if (m.isOwner)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 3,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFECFDF5),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: const Text(
+                                    "Admin",
+                                    style: TextStyle(
+                                      fontSize: 10.5,
+                                      fontWeight: FontWeight.w800,
+                                      color: Color(0xFF059669),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+              const SizedBox(height: 16),
               Row(
                 children: [
                   Expanded(
@@ -1140,36 +1233,91 @@ class _ViewGroupPageState extends State<ViewGroupPage> {
                   Expanded(
                     child: SizedBox(
                       height: 48,
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          Get.back();
-                          Get.snackbar(
-                            "Membership Request Sent",
-                            "Your request to join $name ($groupCode) has been submitted.",
-                            snackPosition: SnackPosition.BOTTOM,
-                            backgroundColor: const Color(0xFF10B981),
-                            colorText: Colors.white,
-                            margin: const EdgeInsets.all(16),
-                            borderRadius: 14,
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF2563EB),
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                        ),
-                        icon: const Icon(Icons.group_add_rounded, size: 18),
-                        label: const Text(
-                          "Join Circle",
-                          style: TextStyle(fontWeight: FontWeight.w700),
-                        ),
-                      ),
+                      child: isMember
+                          ? ElevatedButton.icon(
+                              onPressed: () {
+                                Get.back();
+                                Get.to(
+                                  () => ContributionsScreen(
+                                    initialGroup:
+                                        GroupModel.fromMap(
+                                          {
+                                            'groupName': name,
+                                            'contributionAmount': amount,
+                                            'contributionFrequency': frequency,
+                                            'members': members,
+                                          },
+                                          docId,
+                                        ).toEntity(),
+                                  ),
+                                );
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF2563EB),
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                              ),
+                              icon: const Icon(
+                                Icons.payments_rounded,
+                                size: 18,
+                              ),
+                              label: const Text(
+                                "Contribute",
+                                style: TextStyle(fontWeight: FontWeight.w700),
+                              ),
+                            )
+                          : ElevatedButton.icon(
+                              onPressed: () {
+                                groupBloc.add(JoinGroupRequested(docId));
+                                Get.snackbar(
+                                  "Joining...",
+                                  "Adding you to $name.",
+                                  snackPosition: SnackPosition.BOTTOM,
+                                  backgroundColor: const Color(0xFF2563EB),
+                                  colorText: Colors.white,
+                                );
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF2563EB),
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                              ),
+                              icon: const Icon(Icons.group_add_rounded, size: 18),
+                              label: const Text(
+                                "Join Group",
+                                style: TextStyle(fontWeight: FontWeight.w700),
+                              ),
+                            ),
                     ),
                   ),
                 ],
+              ),
+              const SizedBox(height: 8),
+              Center(
+                child: TextButton.icon(
+                  onPressed: () {
+                    groupBloc.add(LoadGroupMembersRequested(docId));
+                  },
+                  icon: const Icon(
+                    Icons.people_outline_rounded,
+                    size: 16,
+                    color: Color(0xFF2563EB),
+                  ),
+                  label: const Text(
+                    "View Members",
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF2563EB),
+                    ),
+                  ),
+                ),
               ),
             ],
           ),

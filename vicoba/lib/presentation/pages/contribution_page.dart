@@ -5,12 +5,15 @@ import '../bloc/contribution/contribution_bloc.dart';
 import '../bloc/contribution/contribution_event.dart';
 import '../bloc/contribution/contribution_state.dart';
 import '../bloc/group/group_bloc.dart';
+import '../bloc/group/group_event.dart';
 import '../bloc/group/group_state.dart';
 import '../../domain/entities/group_entity.dart';
 import '../../domain/entities/contribution_entity.dart';
 
 class ContributionsScreen extends StatefulWidget {
-  const ContributionsScreen({super.key});
+  final GroupEntity? initialGroup;
+
+  const ContributionsScreen({super.key, this.initialGroup});
 
   @override
   State<ContributionsScreen> createState() => _ContributionsScreenState();
@@ -25,6 +28,16 @@ class _ContributionsScreenState extends State<ContributionsScreen> {
   double _lastContributionAmount = 0.0;
 
   final List<double> _presetAmounts = [10000, 25000, 50000, 100000];
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialGroup != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _showContributionBottomSheet(widget.initialGroup);
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -47,10 +60,19 @@ class _ContributionsScreenState extends State<ContributionsScreen> {
     return "${dt.day} ${months[dt.month - 1]} ${dt.year}";
   }
 
-  void _showContributionBottomSheet() {
+  void _showContributionBottomSheet([GroupEntity? preselected]) {
     _amountController.clear();
     final groups = _groupBloc.state.groups;
-    _selectedGroup = groups.isNotEmpty ? groups.first : null;
+    if (groups.isEmpty) {
+      _groupBloc.add(const LoadUserGroupsRequested());
+    }
+    if (preselected != null && groups.any((g) => g.id == preselected.id)) {
+      _selectedGroup = groups.firstWhere((g) => g.id == preselected.id);
+    } else if (groups.isNotEmpty) {
+      _selectedGroup = groups.first;
+    } else {
+      _selectedGroup = preselected;
+    }
     _selectedPaymentMethod = ContributionBloc.paymentMethods.isNotEmpty
         ? ContributionBloc.paymentMethods.first
         : 'M-Pesa';
@@ -118,7 +140,14 @@ class _ContributionsScreenState extends State<ContributionsScreen> {
                   BlocBuilder<GroupBloc, GroupState>(
                     bloc: _groupBloc,
                     builder: (context, groupState) {
-                      if (groupState.groups.isEmpty) {
+                      // Deduplicate groups by ID to guarantee unique dropdown items.
+                      final uniqueGroups = <String, GroupEntity>{};
+                      for (final g in groupState.groups) {
+                        uniqueGroups[g.id] = g;
+                      }
+                      final availableGroups = uniqueGroups.values.toList();
+
+                      if (availableGroups.isEmpty) {
                         return Container(
                           width: double.infinity,
                           padding: const EdgeInsets.symmetric(
@@ -139,8 +168,17 @@ class _ContributionsScreenState extends State<ContributionsScreen> {
                           ),
                         );
                       }
-                      return DropdownButtonFormField<GroupEntity>(
-                        initialValue: _selectedGroup,
+
+                      // Ensure the selected group always matches an item in availableGroups.
+                      final matchedGroup = _selectedGroup != null &&
+                              uniqueGroups.containsKey(_selectedGroup!.id)
+                          ? uniqueGroups[_selectedGroup!.id]!
+                          : availableGroups.first;
+                      _selectedGroup = matchedGroup;
+
+                      return DropdownButtonFormField<String>(
+                        key: ValueKey(matchedGroup.id),
+                        initialValue: matchedGroup.id,
                         isExpanded: true,
                         decoration: InputDecoration(
                           hintText: "Select your group",
@@ -179,9 +217,9 @@ class _ContributionsScreenState extends State<ContributionsScreen> {
                             ),
                           ),
                         ),
-                        items: groupState.groups.map((group) {
-                          return DropdownMenuItem<GroupEntity>(
-                            value: group,
+                        items: availableGroups.map((group) {
+                          return DropdownMenuItem<String>(
+                            value: group.id,
                             child: Text(
                               group.name,
                               overflow: TextOverflow.ellipsis,
@@ -189,9 +227,10 @@ class _ContributionsScreenState extends State<ContributionsScreen> {
                             ),
                           );
                         }).toList(),
-                        onChanged: (group) {
-                          setState(() {
-                            _selectedGroup = group;
+                        onChanged: (groupId) {
+                          if (groupId == null) return;
+                          setSheetState(() {
+                            _selectedGroup = uniqueGroups[groupId];
                           });
                         },
                       );

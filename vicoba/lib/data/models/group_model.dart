@@ -25,19 +25,33 @@ class GroupModel {
     this.createdAt,
   });
 
+  static double _parseDouble(dynamic value) {
+    if (value is num) return value.toDouble();
+    if (value is String) {
+      return double.tryParse(value.replaceAll(',', '').trim()) ?? 0.0;
+    }
+    return 0.0;
+  }
+
+  static int _parseInt(dynamic value) {
+    if (value is num) return value.toInt();
+    if (value is String) return int.tryParse(value.trim()) ?? 0;
+    return 0;
+  }
+
   factory GroupModel.fromMap(Map<String, dynamic> map, String id) {
     final rawMembers = map['members'];
     return GroupModel(
       id: id,
       name: map['groupName']?.toString() ?? '',
-      contributionAmount: (map['contributionAmount'] as num?)?.toDouble() ?? 0.0,
+      contributionAmount: _parseDouble(map['contributionAmount']),
       contributionFrequency:
           map['contributionFrequency']?.toString() ?? 'Weekly',
       groupCode: map['groupCode']?.toString(),
       members: rawMembers is List
           ? rawMembers.map((e) => e.toString()).toList()
           : const [],
-      memberCount: (map['memberCount'] as num?)?.toInt() ?? 0,
+      memberCount: _parseInt(map['memberCount']),
       ownerId: map['ownerId']?.toString(),
       createdAt: map['createdAt'] is Timestamp
           ? (map['createdAt'] as Timestamp).toDate()

@@ -6,7 +6,9 @@ import '../bloc/group/group_event.dart';
 import '../bloc/group/group_state.dart';
 
 class JoinGroupScreen extends StatefulWidget {
-  const JoinGroupScreen({super.key});
+  final String? initialCode;
+
+  const JoinGroupScreen({super.key, this.initialCode});
 
   @override
   // ignore: library_private_types_in_public_api
@@ -22,11 +24,22 @@ class _JoinGroupScreenState extends State<JoinGroupScreen> {
   @override
   void initState() {
     super.initState();
+    final prefilled = widget.initialCode?.trim() ?? '';
+    if (prefilled.isNotEmpty) {
+      _codeController.text = prefilled;
+      _isButtonEnabled = prefilled.length >= 5;
+    }
     _codeController.addListener(() {
       setState(() {
         _isButtonEnabled = _codeController.text.trim().length >= 5;
       });
     });
+  }
+
+  @override
+  void dispose() {
+    _codeController.dispose();
+    super.dispose();
   }
 
   void _joinGroup() {

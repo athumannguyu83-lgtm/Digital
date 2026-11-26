@@ -18,4 +18,13 @@ class GroupEntity {
     this.memberCount = 0,
     this.ownerId,
   });
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is GroupEntity && other.id == id;
+  }
+
+  @override
+  int get hashCode => id.hashCode;
 }

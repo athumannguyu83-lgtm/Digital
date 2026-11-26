@@ -1,10 +1,11 @@
 import 'package:equatable/equatable.dart';
 
 import '../../../domain/entities/group_entity.dart';
+import '../../../domain/entities/group_member_entity.dart';
 
 enum GroupStatus { initial, loading, success, failure }
 
-enum GroupOperation { none, load, create, join }
+enum GroupOperation { none, load, create, join, loadMembers }
 
 class GroupState extends Equatable {
   final GroupStatus status;
@@ -12,6 +13,8 @@ class GroupState extends Equatable {
   final String errorMessage;
   final List<GroupEntity> groups;
   final GroupEntity? joinedGroup;
+  final List<GroupMemberEntity> members;
+  final String? membersGroupId;
 
   const GroupState({
     this.status = GroupStatus.initial,
@@ -19,6 +22,8 @@ class GroupState extends Equatable {
     this.errorMessage = '',
     this.groups = const [],
     this.joinedGroup,
+    this.members = const [],
+    this.membersGroupId,
   });
 
   bool get isLoading => status == GroupStatus.loading;
@@ -30,6 +35,9 @@ class GroupState extends Equatable {
     List<GroupEntity>? groups,
     GroupEntity? joinedGroup,
     bool clearJoinedGroup = false,
+    List<GroupMemberEntity>? members,
+    String? membersGroupId,
+    bool clearMembers = false,
   }) {
     return GroupState(
       status: status ?? this.status,
@@ -39,6 +47,8 @@ class GroupState extends Equatable {
       joinedGroup: clearJoinedGroup
           ? null
           : (joinedGroup ?? this.joinedGroup),
+      members: clearMembers ? const [] : (members ?? this.members),
+      membersGroupId: membersGroupId ?? this.membersGroupId,
     );
   }
 
@@ -49,5 +59,7 @@ class GroupState extends Equatable {
     errorMessage,
     groups,
     joinedGroup,
+    members,
+    membersGroupId,
   ];
 }

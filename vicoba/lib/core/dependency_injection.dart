@@ -34,6 +34,8 @@ import '../domain/usecases/get_total_contributions_usecase.dart';
 import '../domain/usecases/get_user_groups_usecase.dart';
 import '../domain/usecases/join_group_by_code_usecase.dart';
 import '../domain/usecases/create_group_usecase.dart';
+import '../domain/usecases/join_group_usecase.dart';
+import '../domain/usecases/get_group_members_usecase.dart';
 import '../presentation/bloc/auth/auth_bloc.dart';
 import '../presentation/bloc/loan/loan_bloc.dart';
 import '../presentation/bloc/contribution/contribution_bloc.dart';
@@ -101,6 +103,8 @@ class DependencyInjection {
     Get.lazyPut(() => GetUserGroupsUseCase(Get.find<GroupRepository>()));
     Get.lazyPut(() => JoinGroupByCodeUseCase(Get.find<GroupRepository>()));
     Get.lazyPut(() => CreateGroupUseCase(Get.find<GroupRepository>()));
+    Get.lazyPut(() => JoinGroupUseCase(Get.find<GroupRepository>()));
+    Get.lazyPut(() => GetGroupMembersUseCase(Get.find<GroupRepository>()));
 
     // BLoCs
     Get.lazyPut(
@@ -140,6 +144,8 @@ class DependencyInjection {
         Get.find<GetUserGroupsUseCase>(),
         Get.find<CreateGroupUseCase>(),
         Get.find<JoinGroupByCodeUseCase>(),
+        Get.find<JoinGroupUseCase>(),
+        Get.find<GetGroupMembersUseCase>(),
       ),
     );
   }

@@ -34,16 +34,28 @@ class ContributionModel {
     };
   }
 
+  static double _parseAmount(dynamic value) {
+    if (value is num) return value.toDouble();
+    if (value is String) {
+      return double.tryParse(value.replaceAll(',', '').trim()) ?? 0.0;
+    }
+    return 0.0;
+  }
+
   factory ContributionModel.fromMap(Map<String, dynamic> map, String docId) {
     return ContributionModel(
       id: docId,
-      userId: map["userId"] ?? '',
-      groupId: map["groupId"] ?? '',
-      amount: (map["amount"] as num?)?.toDouble() ?? 0.0,
-      paymentMethod: map["paymentMethod"] ?? '',
-      status: map["status"] ?? 'pending',
-      contributionDate: map["contributionDate"] ?? Timestamp.now(),
-      createdAt: map["createdAt"] ?? Timestamp.now(),
+      userId: map["userId"]?.toString() ?? '',
+      groupId: map["groupId"]?.toString() ?? '',
+      amount: _parseAmount(map["amount"]),
+      paymentMethod: map["paymentMethod"]?.toString() ?? '',
+      status: map["status"]?.toString() ?? 'pending',
+      contributionDate: map["contributionDate"] is Timestamp
+          ? map["contributionDate"] as Timestamp
+          : Timestamp.now(),
+      createdAt: map["createdAt"] is Timestamp
+          ? map["createdAt"] as Timestamp
+          : Timestamp.now(),
     );
   }
 
