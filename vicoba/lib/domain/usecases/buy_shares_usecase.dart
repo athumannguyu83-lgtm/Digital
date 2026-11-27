@@ -8,10 +8,12 @@ class BuySharesUseCase {
   Future<void> execute({
     required String groupId,
     required int quantity,
+    String paymentMethod = 'M-Pesa',
   }) {
     return _shareRepository.buyShares(
       groupId: groupId,
       quantity: quantity,
+      paymentMethod: paymentMethod,
     );
   }
 }

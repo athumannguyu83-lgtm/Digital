@@ -27,11 +27,17 @@ class GroupRepositoryImpl implements GroupRepository {
     required String name,
     required double contributionAmount,
     required String contributionFrequency,
+    double? sharePrice,
+    int maxSharesPerPurchase = 1000,
+    double loanMultiplier = 3.0,
   }) {
     return _groupDataSource.createGroup(
       name: name,
       contributionAmount: contributionAmount,
       contributionFrequency: contributionFrequency,
+      sharePrice: sharePrice,
+      maxSharesPerPurchase: maxSharesPerPurchase,
+      loanMultiplier: loanMultiplier,
     );
   }
 

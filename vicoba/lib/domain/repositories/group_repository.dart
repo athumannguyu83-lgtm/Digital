@@ -9,6 +9,9 @@ abstract class GroupRepository {
     required String name,
     required double contributionAmount,
     required String contributionFrequency,
+    double? sharePrice,
+    int maxSharesPerPurchase = 1000,
+    double loanMultiplier = 3.0,
   });
   Future<void> joinGroup(String groupId);
   Future<bool> isGroupMember(String groupId, String userId);

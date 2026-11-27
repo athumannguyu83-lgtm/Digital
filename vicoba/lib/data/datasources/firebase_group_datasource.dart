@@ -48,16 +48,25 @@ class FirebaseGroupDataSource {
     required String name,
     required double contributionAmount,
     required String contributionFrequency,
+    double? sharePrice,
+    int maxSharesPerPurchase = 1000,
+    double loanMultiplier = 3.0,
   }) async {
     final user = _auth.currentUser;
     if (user == null) {
       throw Exception("User not logged in");
     }
 
+    final effectiveSharePrice =
+        (sharePrice != null && sharePrice > 0) ? sharePrice : contributionAmount;
+
     final docRef = await _firestore.collection("groups").add({
       'groupName': name,
       'contributionAmount': contributionAmount,
       'contributionFrequency': contributionFrequency,
+      'sharePrice': effectiveSharePrice,
+      'maxSharesPerPurchase': maxSharesPerPurchase,
+      'loanMultiplier': loanMultiplier,
       'groupCode': _generateGroupCode(),
       'members': [user.uid],
       'memberCount': 1,

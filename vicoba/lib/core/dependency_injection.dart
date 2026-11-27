@@ -42,6 +42,7 @@ import '../domain/usecases/get_group_members_usecase.dart';
 import '../domain/usecases/buy_shares_usecase.dart';
 import '../domain/usecases/get_my_shares_usecase.dart';
 import '../domain/usecases/get_share_capital_usecase.dart';
+import '../domain/usecases/redeem_shares_usecase.dart';
 import '../presentation/bloc/auth/auth_bloc.dart';
 import '../presentation/bloc/loan/loan_bloc.dart';
 import '../presentation/bloc/contribution/contribution_bloc.dart';
@@ -121,6 +122,7 @@ class DependencyInjection {
     Get.lazyPut(() => BuySharesUseCase(Get.find<ShareRepository>()));
     Get.lazyPut(() => GetMySharesUseCase(Get.find<ShareRepository>()));
     Get.lazyPut(() => GetShareCapitalUseCase(Get.find<ShareRepository>()));
+    Get.lazyPut(() => RedeemSharesUseCase(Get.find<ShareRepository>()));
 
     // BLoCs
     Get.lazyPut(
@@ -169,6 +171,7 @@ class DependencyInjection {
         getMySharesUseCase: Get.find<GetMySharesUseCase>(),
         buySharesUseCase: Get.find<BuySharesUseCase>(),
         getShareCapitalUseCase: Get.find<GetShareCapitalUseCase>(),
+        redeemSharesUseCase: Get.find<RedeemSharesUseCase>(),
       ),
     );
   }

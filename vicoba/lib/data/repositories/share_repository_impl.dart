@@ -18,15 +18,40 @@ class ShareRepositoryImpl implements ShareRepository {
   Future<void> buyShares({
     required String groupId,
     required int quantity,
+    String paymentMethod = 'M-Pesa',
   }) {
     return _shareDataSource.buyShares(
       groupId: groupId,
       quantity: quantity,
+      paymentMethod: paymentMethod,
     );
+  }
+
+  @override
+  Future<void> redeemShares({
+    required String groupId,
+    required int quantity,
+    String paymentMethod = 'M-Pesa',
+  }) {
+    return _shareDataSource.redeemShares(
+      groupId: groupId,
+      quantity: quantity,
+      paymentMethod: paymentMethod,
+    );
+  }
+
+  @override
+  Future<void> updateShareStatus(String shareId, String status) {
+    return _shareDataSource.updateShareStatus(shareId, status);
   }
 
   @override
   Future<double> getShareCapital(String groupId) {
     return _shareDataSource.getShareCapital(groupId);
+  }
+
+  @override
+  Stream<double> watchShareCapital(String groupId) {
+    return _shareDataSource.watchShareCapital(groupId);
   }
 }

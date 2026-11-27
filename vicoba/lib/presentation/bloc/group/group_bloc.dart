@@ -78,6 +78,9 @@ class GroupBloc extends Bloc<GroupEvent, GroupState> {
         name: event.name,
         contributionAmount: event.contributionAmount,
         contributionFrequency: event.contributionFrequency,
+        sharePrice: event.sharePrice,
+        maxSharesPerPurchase: event.maxSharesPerPurchase,
+        loanMultiplier: event.loanMultiplier,
       );
       emit(
         state.copyWith(

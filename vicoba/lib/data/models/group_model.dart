@@ -7,6 +7,9 @@ class GroupModel {
   final String name;
   final double contributionAmount;
   final String contributionFrequency;
+  final double? sharePrice;
+  final int maxSharesPerPurchase;
+  final double loanMultiplier;
   final String? groupCode;
   final List<String> members;
   final int memberCount;
@@ -18,6 +21,9 @@ class GroupModel {
     required this.name,
     required this.contributionAmount,
     required this.contributionFrequency,
+    this.sharePrice,
+    this.maxSharesPerPurchase = 1000,
+    this.loanMultiplier = 3.0,
     this.groupCode,
     this.members = const [],
     this.memberCount = 0,
@@ -41,12 +47,18 @@ class GroupModel {
 
   factory GroupModel.fromMap(Map<String, dynamic> map, String id) {
     final rawMembers = map['members'];
+    final parsedSharePrice = _parseDouble(map['sharePrice']);
+    final parsedMaxShares = _parseInt(map['maxSharesPerPurchase']);
+    final parsedMultiplier = _parseDouble(map['loanMultiplier']);
     return GroupModel(
       id: id,
       name: map['groupName']?.toString() ?? '',
       contributionAmount: _parseDouble(map['contributionAmount']),
       contributionFrequency:
           map['contributionFrequency']?.toString() ?? 'Weekly',
+      sharePrice: parsedSharePrice > 0 ? parsedSharePrice : null,
+      maxSharesPerPurchase: parsedMaxShares > 0 ? parsedMaxShares : 1000,
+      loanMultiplier: parsedMultiplier > 0 ? parsedMultiplier : 3.0,
       groupCode: map['groupCode']?.toString(),
       members: rawMembers is List
           ? rawMembers.map((e) => e.toString()).toList()
@@ -65,6 +77,9 @@ class GroupModel {
       name: name,
       contributionAmount: contributionAmount,
       contributionFrequency: contributionFrequency,
+      sharePrice: sharePrice,
+      maxSharesPerPurchase: maxSharesPerPurchase,
+      loanMultiplier: loanMultiplier,
       groupCode: groupCode,
       members: members,
       memberCount: memberCount,

@@ -4,7 +4,8 @@ import '../../../domain/entities/share_entity.dart';
 
 class ShareState extends Equatable {
   final List<ShareEntity> shares;
-  final double shareCapital;
+  final Map<String, double> shareCapitalByGroup;
+  final String? activeGroupId;
   final bool isLoadingShares;
   final bool isLoadingCapital;
   final bool isBuying;
@@ -13,13 +14,20 @@ class ShareState extends Equatable {
 
   const ShareState({
     this.shares = const [],
-    this.shareCapital = 0.0,
+    this.shareCapitalByGroup = const {},
+    this.activeGroupId,
     this.isLoadingShares = false,
     this.isLoadingCapital = false,
     this.isBuying = false,
     this.errorMessage,
     this.successMessage,
   });
+
+  double get shareCapital =>
+      activeGroupId == null ? 0.0 : (shareCapitalByGroup[activeGroupId] ?? 0.0);
+
+  double shareCapitalForGroup(String? groupId) =>
+      groupId == null ? 0.0 : (shareCapitalByGroup[groupId] ?? 0.0);
 
   int get totalShares =>
       shares.fold(0, (sum, share) => sum + share.quantity);
@@ -29,7 +37,8 @@ class ShareState extends Equatable {
 
   ShareState copyWith({
     List<ShareEntity>? shares,
-    double? shareCapital,
+    Map<String, double>? shareCapitalByGroup,
+    String? activeGroupId,
     bool? isLoadingShares,
     bool? isLoadingCapital,
     bool? isBuying,
@@ -39,7 +48,8 @@ class ShareState extends Equatable {
   }) {
     return ShareState(
       shares: shares ?? this.shares,
-      shareCapital: shareCapital ?? this.shareCapital,
+      shareCapitalByGroup: shareCapitalByGroup ?? this.shareCapitalByGroup,
+      activeGroupId: activeGroupId ?? this.activeGroupId,
       isLoadingShares: isLoadingShares ?? this.isLoadingShares,
       isLoadingCapital: isLoadingCapital ?? this.isLoadingCapital,
       isBuying: isBuying ?? this.isBuying,
@@ -52,7 +62,8 @@ class ShareState extends Equatable {
   @override
   List<Object?> get props => [
         shares,
-        shareCapital,
+        shareCapitalByGroup,
+        activeGroupId,
         isLoadingShares,
         isLoadingCapital,
         isBuying,

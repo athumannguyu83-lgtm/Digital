@@ -15,15 +15,28 @@ class CreateGroupRequested extends GroupEvent {
   final String name;
   final double contributionAmount;
   final String contributionFrequency;
+  final double? sharePrice;
+  final int maxSharesPerPurchase;
+  final double loanMultiplier;
 
   const CreateGroupRequested({
     required this.name,
     required this.contributionAmount,
     required this.contributionFrequency,
+    this.sharePrice,
+    this.maxSharesPerPurchase = 1000,
+    this.loanMultiplier = 3.0,
   });
 
   @override
-  List<Object?> get props => [name, contributionAmount, contributionFrequency];
+  List<Object?> get props => [
+        name,
+        contributionAmount,
+        contributionFrequency,
+        sharePrice,
+        maxSharesPerPurchase,
+        loanMultiplier,
+      ];
 }
 
 class JoinGroupByCodeRequested extends GroupEvent {

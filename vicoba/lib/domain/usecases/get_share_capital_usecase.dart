@@ -8,4 +8,8 @@ class GetShareCapitalUseCase {
   Future<double> execute(String groupId) {
     return _shareRepository.getShareCapital(groupId);
   }
+
+  Stream<double> watch(String groupId) {
+    return _shareRepository.watchShareCapital(groupId);
+  }
 }
