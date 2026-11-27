@@ -3,14 +3,17 @@ import '../data/datasources/firebase_auth_datasource.dart';
 import '../data/datasources/firebase_loan_datasource.dart';
 import '../data/datasources/firebase_contribution_datasource.dart';
 import '../data/datasources/firebase_group_datasource.dart';
+import '../data/datasources/firebase_share_datasource.dart';
 import '../data/repositories/auth_repository_impl.dart';
 import '../data/repositories/loan_repository_impl.dart';
 import '../data/repositories/contribution_repository_impl.dart';
 import '../data/repositories/group_repository_impl.dart';
+import '../data/repositories/share_repository_impl.dart';
 import '../domain/repositories/auth_repository.dart';
 import '../domain/repositories/loan_repository.dart';
 import '../domain/repositories/contribution_repository.dart';
 import '../domain/repositories/group_repository.dart';
+import '../domain/repositories/share_repository.dart';
 import '../domain/usecases/register_user_usecase.dart';
 import '../domain/usecases/login_user_usecase.dart';
 import '../domain/usecases/get_user_role_usecase.dart';
@@ -36,10 +39,14 @@ import '../domain/usecases/join_group_by_code_usecase.dart';
 import '../domain/usecases/create_group_usecase.dart';
 import '../domain/usecases/join_group_usecase.dart';
 import '../domain/usecases/get_group_members_usecase.dart';
+import '../domain/usecases/buy_shares_usecase.dart';
+import '../domain/usecases/get_my_shares_usecase.dart';
+import '../domain/usecases/get_share_capital_usecase.dart';
 import '../presentation/bloc/auth/auth_bloc.dart';
 import '../presentation/bloc/loan/loan_bloc.dart';
 import '../presentation/bloc/contribution/contribution_bloc.dart';
 import '../presentation/bloc/group/group_bloc.dart';
+import '../presentation/bloc/share/share_bloc.dart';
 
 class DependencyInjection {
   static void init() {
@@ -48,6 +55,7 @@ class DependencyInjection {
     Get.lazyPut(() => FirebaseLoanDataSource());
     Get.lazyPut(() => FirebaseContributionDataSource());
     Get.lazyPut(() => FirebaseGroupDataSource());
+    Get.lazyPut(() => FirebaseShareDataSource());
 
     // Repositories
     Get.lazyPut<AuthRepository>(
@@ -63,6 +71,9 @@ class DependencyInjection {
     );
     Get.lazyPut<GroupRepository>(
       () => GroupRepositoryImpl(Get.find<FirebaseGroupDataSource>()),
+    );
+    Get.lazyPut<ShareRepository>(
+      () => ShareRepositoryImpl(Get.find<FirebaseShareDataSource>()),
     );
 
     // Use Cases - Auth
@@ -106,6 +117,11 @@ class DependencyInjection {
     Get.lazyPut(() => JoinGroupUseCase(Get.find<GroupRepository>()));
     Get.lazyPut(() => GetGroupMembersUseCase(Get.find<GroupRepository>()));
 
+    // Use Cases - Share
+    Get.lazyPut(() => BuySharesUseCase(Get.find<ShareRepository>()));
+    Get.lazyPut(() => GetMySharesUseCase(Get.find<ShareRepository>()));
+    Get.lazyPut(() => GetShareCapitalUseCase(Get.find<ShareRepository>()));
+
     // BLoCs
     Get.lazyPut(
       () => AuthBloc(
@@ -146,6 +162,13 @@ class DependencyInjection {
         Get.find<JoinGroupByCodeUseCase>(),
         Get.find<JoinGroupUseCase>(),
         Get.find<GetGroupMembersUseCase>(),
+      ),
+    );
+    Get.lazyPut(
+      () => ShareBloc(
+        getMySharesUseCase: Get.find<GetMySharesUseCase>(),
+        buySharesUseCase: Get.find<BuySharesUseCase>(),
+        getShareCapitalUseCase: Get.find<GetShareCapitalUseCase>(),
       ),
     );
   }

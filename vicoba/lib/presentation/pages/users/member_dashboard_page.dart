@@ -14,7 +14,15 @@ import '../../bloc/contribution/contribution_bloc.dart';
 import '../../bloc/contribution/contribution_state.dart';
 import '../../bloc/loan/loan_bloc.dart';
 import '../../bloc/loan/loan_state.dart';
+import '../../bloc/share/share_bloc.dart';
+import '../../bloc/share/share_event.dart';
+import '../../bloc/share/share_state.dart';
+import '../../bloc/group/group_bloc.dart';
+import '../../bloc/group/group_event.dart';
+import '../../bloc/group/group_state.dart';
+import '../../../domain/entities/group_entity.dart';
 import '../../../domain/entities/loan_entity.dart';
+import '../../../domain/entities/share_entity.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -27,6 +35,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
   final AuthBloc _authBloc = Get.find<AuthBloc>();
   final ContributionBloc _contributionBloc = Get.find<ContributionBloc>();
   final LoanBloc _loanBloc = Get.find<LoanBloc>();
+  final ShareBloc _shareBloc = Get.find<ShareBloc>();
+  final GroupBloc _groupBloc = Get.find<GroupBloc>();
+
+  @override
+  void initState() {
+    super.initState();
+    _shareBloc.add(const LoadMySharesRequested());
+    _groupBloc.add(const LoadUserGroupsRequested());
+  }
 
   double _fallbackSavings = 12450000;
   bool _isLoading = false;
@@ -179,7 +196,42 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Get.offAllNamed('/login');
         }
       },
-      child: _buildDashboard(context),
+      child: BlocListener<GroupBloc, GroupState>(
+        bloc: _groupBloc,
+        listenWhen: (previous, current) =>
+            current.groups.isNotEmpty &&
+            previous.groups != current.groups,
+        listener: (context, state) {
+          _shareBloc.add(LoadShareCapitalRequested(state.groups.first.id));
+        },
+        child: BlocListener<ShareBloc, ShareState>(
+          bloc: _shareBloc,
+          listener: (context, state) {
+            if (state.successMessage != null &&
+                state.successMessage!.isNotEmpty) {
+              Get.snackbar(
+                "Success",
+                state.successMessage!,
+                snackPosition: SnackPosition.BOTTOM,
+                backgroundColor: const Color(0xFF10B981),
+                colorText: Colors.white,
+              );
+              if (Get.isBottomSheetOpen ?? false) Get.back();
+            }
+            if (state.errorMessage != null &&
+                state.errorMessage!.isNotEmpty) {
+              Get.snackbar(
+                "Error",
+                state.errorMessage!,
+                snackPosition: SnackPosition.BOTTOM,
+                backgroundColor: Colors.redAccent,
+                colorText: Colors.white,
+              );
+            }
+          },
+          child: _buildDashboard(context),
+        ),
+      ),
     );
   }
 
@@ -207,6 +259,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   return _buildSavingsCard(contributionState.totalContributions);
                 },
               ),
+              const SizedBox(height: 24),
+              _buildSectionHeader(
+                title: "My Shares",
+                subtitle: "Shareholdings & capital",
+              ),
+              const SizedBox(height: 14),
+              _buildSharesSection(),
               const SizedBox(height: 24),
               _buildSectionHeader(
                 title: "Quick Actions",
@@ -645,6 +704,401 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildSharesSection() {
+    final groups = _groupBloc.state.groups;
+    final currentGroup = groups.isNotEmpty ? groups.first : null;
+
+    return BlocBuilder<ShareBloc, ShareState>(
+      bloc: _shareBloc,
+      builder: (context, shareState) {
+        final groupShares = currentGroup == null
+            ? const <ShareEntity>[]
+            : shareState.shares
+                .where((s) => s.groupId == currentGroup.id)
+                .toList();
+        final totalShares =
+            groupShares.fold<int>(0, (sum, s) => sum + s.quantity);
+        final totalValue = groupShares.fold<double>(
+          0.0,
+          (sum, s) => sum + s.shareValue,
+        );
+        final recentPurchases = groupShares.take(3).toList();
+
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.02),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildShareStat(
+                      label: "Total Shares",
+                      value: "${shareState.isLoadingShares ? '…' : totalShares}",
+                    ),
+                  ),
+                  Container(
+                    width: 1,
+                    height: 36,
+                    color: const Color(0xFFE2E8F0),
+                  ),
+                  Expanded(
+                    child: _buildShareStat(
+                      label: "Share Value",
+                      value: _formatCurrency(totalValue),
+                    ),
+                  ),
+                  Container(
+                    width: 1,
+                    height: 36,
+                    color: const Color(0xFFE2E8F0),
+                  ),
+                  Expanded(
+                    child: _buildShareStat(
+                      label: "Share Capital",
+                      value: _formatCurrency(shareState.shareCapital),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: _showBuySharesSheet,
+                  icon: const Icon(Icons.add_chart_rounded, size: 18),
+                  label: Text(
+                    currentGroup == null
+                        ? "Join a Group to Buy Shares"
+                        : "Buy Shares",
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF2563EB),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 13),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+              if (recentPurchases.isNotEmpty) ...[
+                const SizedBox(height: 14),
+                const Divider(height: 1),
+                const SizedBox(height: 10),
+                for (final purchase in recentPurchases)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 5),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.confirmation_number_outlined,
+                          size: 16,
+                          color: Color(0xFF2563EB),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            "${purchase.quantity} share${purchase.quantity > 1 ? 's' : ''} • ${purchase.createdAt.day}/${purchase.createdAt.month}/${purchase.createdAt.year}",
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[700],
+                            ),
+                          ),
+                        ),
+                        Text(
+                          _formatCurrency(purchase.totalAmount),
+                          style: const TextStyle(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF0F172A),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildShareStat({required String label, required String value}) {
+    return Column(
+      children: [
+        Text(
+          value,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF0F172A),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          textAlign: TextAlign.center,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontSize: 10.5,
+            color: Colors.grey[600],
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showBuySharesSheet() {
+    final groups = _groupBloc.state.groups;
+    if (groups.isEmpty) {
+      Get.snackbar(
+        "No Groups",
+        "Join or create a group before buying shares.",
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.orangeAccent,
+        colorText: Colors.white,
+      );
+      return;
+    }
+
+    GroupEntity? selectedGroup = groups.first;
+    int quantity = 1;
+
+    Get.bottomSheet(
+      StatefulBuilder(
+        builder: (context, setSheetState) {
+          final unitPrice = selectedGroup?.contributionAmount ?? 0.0;
+          final total = quantity * unitPrice;
+
+          return Container(
+            padding: EdgeInsets.only(
+              left: 22,
+              right: 22,
+              top: 22,
+              bottom: MediaQuery.of(context).viewInsets.bottom + 22,
+            ),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                const Text(
+                  "Buy Shares",
+                  style: TextStyle(
+                    fontSize: 19,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF0F172A),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  "Group",
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF475569),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                DropdownButtonFormField<GroupEntity>(
+                  initialValue: selectedGroup,
+                  isExpanded: true,
+                  decoration: InputDecoration(
+                    filled: true,
+                    fillColor: const Color(0xFFF8FAFC),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 12,
+                    ),
+                  ),
+                  items: groups
+                      .map(
+                        (group) => DropdownMenuItem<GroupEntity>(
+                          value: group,
+                          child: Text(
+                            "${group.name} • ${_formatCurrency(group.contributionAmount)}/share",
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (group) {
+                    setSheetState(() => selectedGroup = group);
+                  },
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  "Quantity",
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF475569),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _buildQuantityButton(
+                      icon: Icons.remove_rounded,
+                      onTap: quantity > 1
+                          ? () => setSheetState(() => quantity--)
+                          : null,
+                    ),
+                    Text(
+                      "$quantity",
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF0F172A),
+                      ),
+                    ),
+                    _buildQuantityButton(
+                      icon: Icons.add_rounded,
+                      onTap: () => setSheetState(() => quantity++),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF1F5F9),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        "Total",
+                        style: TextStyle(
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF475569),
+                        ),
+                      ),
+                      Text(
+                        _formatCurrency(total),
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF2563EB),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 18),
+                BlocBuilder<ShareBloc, ShareState>(
+                  bloc: _shareBloc,
+                  builder: (context, shareState) {
+                    return SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: shareState.isBuying || selectedGroup == null
+                            ? null
+                            : () {
+                                _shareBloc.add(
+                                  BuySharesRequested(
+                                    groupId: selectedGroup!.id,
+                                    quantity: quantity,
+                                  ),
+                                );
+                              },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF2563EB),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: shareState.isBuying
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Text(
+                                "Confirm Purchase",
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+      isScrollControlled: true,
+    );
+  }
+
+  Widget _buildQuantityButton({
+    required IconData icon,
+    required VoidCallback? onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        width: 44,
+        height: 44,
+        decoration: BoxDecoration(
+          color: const Color(0xFFF1F5F9),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: const Color(0xFFE2E8F0)),
+        ),
+        child: Icon(
+          icon,
+          color: onTap == null ? Colors.grey[400] : const Color(0xFF2563EB),
+        ),
       ),
     );
   }

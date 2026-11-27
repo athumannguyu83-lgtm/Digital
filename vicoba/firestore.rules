@@ -1,0 +1,67 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isGroupMember(groupId) {
+      return signedIn()
+        && get(/databases/$(database)/documents/groups/$(groupId))
+             .data.members.hasAny([request.auth.uid]);
+    }
+
+    function isGroupOwner(groupId) {
+      return signedIn()
+        && get(/databases/$(database)/documents/groups/$(groupId))
+             .data.ownerId == request.auth.uid;
+    }
+
+    match /users/{uid} {
+      allow read: if signedIn()
+        && (request.auth.uid == uid
+            || get(/databases/$(database)/documents/users/$(request.auth.uid))
+                 .data.role == 'admin');
+      allow create, update: if signedIn() && request.auth.uid == uid;
+      allow delete: if false;
+    }
+
+    match /groups/{groupId} {
+      allow read: if signedIn();
+      allow create: if signedIn()
+        && request.resource.data.ownerId == request.auth.uid;
+      allow update: if signedIn()
+        && (isGroupOwner(groupId) || isGroupMember(groupId));
+      allow delete: if signedIn() && isGroupOwner(groupId);
+    }
+
+    match /contributions/{contributionId} {
+      allow read: if signedIn()
+        && (resource.data.userId == request.auth.uid
+            || isGroupMember(resource.data.groupId));
+      allow create: if signedIn()
+        && request.resource.data.userId == request.auth.uid
+        && isGroupMember(request.resource.data.groupId);
+      allow update, delete: if false;
+    }
+
+    match /shares/{shareId} {
+      allow read: if signedIn()
+        && (resource.data.userId == request.auth.uid
+            || isGroupMember(resource.data.groupId));
+      allow create: if signedIn()
+        && request.resource.data.userId == request.auth.uid
+        && isGroupMember(request.resource.data.groupId);
+      allow update, delete: if false;
+    }
+
+    match /loans/{loanId} {
+      allow read: if signedIn();
+      allow create: if signedIn()
+        && request.resource.data.userId == request.auth.uid;
+      allow update: if signedIn();
+      allow delete: if false;
+    }
+  }
+}

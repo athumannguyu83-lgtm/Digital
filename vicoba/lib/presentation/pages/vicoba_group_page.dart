@@ -20,6 +20,13 @@ class _VicobaGroupPageState extends State<VicobaGroupPage> {
 
   final GroupBloc _groupBloc = Get.find<GroupBloc>();
 
+  @override
+  void dispose() {
+    groupNameController.dispose();
+    contributionAmountController.dispose();
+    super.dispose();
+  }
+
   void createGroup() {
     if (groupNameController.text.trim().isEmpty ||
         contributionAmountController.text.trim().isEmpty) {
@@ -33,7 +40,12 @@ class _VicobaGroupPageState extends State<VicobaGroupPage> {
       return;
     }
 
-    final amount = double.tryParse(contributionAmountController.text.trim());
+    final amount = double.tryParse(
+      contributionAmountController.text
+          .trim()
+          .replaceAll(',', '')
+          .replaceAll(' ', ''),
+    );
     if (amount == null || amount <= 0) {
       Get.snackbar(
         "Error",
@@ -190,6 +202,7 @@ class _VicobaGroupPageState extends State<VicobaGroupPage> {
           // Dropdown
           DropdownButtonFormField<String>(
             isExpanded: true,
+            initialValue: contributionFrequency,
             decoration: InputDecoration(
               labelText: "Contribution Frequency",
               prefixIcon: Icon(Icons.calendar_month, color: Colors.orange),
